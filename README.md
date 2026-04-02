@@ -12,6 +12,16 @@ It lets a user:
 
 The current version focuses on a clean, working foundation first. Advanced AI features are intentionally not included yet.
 
+## Open Source
+
+This project is open source under the [MIT License](./LICENSE).
+
+If you want to contribute, start with:
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [SECURITY.md](./SECURITY.md)
+
 ## Phase 1 Scope
 
 This repository currently includes:

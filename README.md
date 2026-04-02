@@ -1,5 +1,6 @@
 # AI Life OS
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e636173a-af9e-4de0-a03e-095be3cb8a69" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9152b158-f5fc-45bd-9c36-d88b2390ad1f" />
+
 
 AI Life OS is a Phase 1 MVP for a personal productivity web app.
 

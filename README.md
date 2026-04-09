@@ -36,6 +36,63 @@ The codebase is also structured for future WhatsApp support with a provider inte
 - Dev debug route to simulate Telegram messages locally
 
 ## Architecture
+# AI Life OS
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9152b158-f5fc-45bd-9c36-d88b2390ad1f" />
+
+
+AI Life OS is a Phase 1 MVP for a personal productivity web app.
+
+It lets a user:
+
+- register and log in
+- manage tasks
+- manage notes
+- manage goals
+- view a simple dashboard
+
+The current version focuses on a clean, working foundation first. Advanced AI features are intentionally not included yet.
+
+## Open Source
+
+This project is open source under the [MIT License](./LICENSE).
+
+If you want to contribute, start with:
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [SECURITY.md](./SECURITY.md)
+
+## Phase 1 Scope
+
+This repository currently includes:
+
+- JWT authentication with hashed passwords
+- protected frontend routes
+- REST API for tasks, notes, and goals
+- PostgreSQL database with Prisma ORM
+- Next.js frontend with a production-style SaaS UI
+- optimistic CRUD interactions for core productivity screens
+
+## Tech Stack
+
+### Frontend
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS 4
+
+### Backend
+
+- Node.js
+- Express
+- TypeScript
+- Prisma
+- PostgreSQL
+- JWT authentication
+- bcrypt password hashing
+
+## Project Structure
 
 ```text
 backend/src/

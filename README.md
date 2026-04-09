@@ -1,3 +1,41 @@
+# AI Life Copilot
+
+Telegram-first personal AI operating system for planning, memory, goals, tasks, reminders, daily reviews, and weekly summaries.
+
+The MVP in this repository is backend-first. The production path is:
+
+- Telegram receives the message
+- backend classifies intent and stores useful memory
+- goals/tasks/plans/reviews/reminders are persisted in PostgreSQL via Prisma
+- OpenAI is used for structured intent extraction, memory extraction, planning, coaching, review summaries, and weekly summaries
+- scheduler sends morning plan, evening review, weekly summary, and one-off reminders
+
+The codebase is also structured for future WhatsApp support with a provider interface and a webhook stub.
+
+## What’s Built
+
+- Telegram integration with webhook support
+- Optional Telegram polling mode for local development
+- First-contact user creation from Telegram messages
+- Intent detection for:
+  - `SAVE_GOAL`
+  - `ADD_TASK`
+  - `PLAN_DAY`
+  - `REVIEW_DAY`
+  - `ASK_ADVICE`
+  - `SAVE_MEMORY`
+  - `WEEKLY_SUMMARY`
+  - `UNKNOWN`
+- Structured long-term memory storage
+- Goal and task management tied to each user
+- Daily planner generation using goals, pending tasks, memory, and review context
+- Daily review capture with task status updates
+- Weekly summary generation
+- Reminder scheduler for morning plan, evening review, weekly summary, and custom reminders
+- Clean backend module separation for AI, services, routes/controllers, providers, jobs, config, and utils
+- Dev debug route to simulate Telegram messages locally
+
+## Architecture
 # AI Life OS
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9152b158-f5fc-45bd-9c36-d88b2390ad1f" />
 
@@ -57,522 +95,234 @@ This repository currently includes:
 ## Project Structure
 
 ```text
-ai-life-os/
-├── backend/
-│   ├── prisma/
-│   │   ├── migrations/
-│   │   └── schema.prisma
-│   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── routes/
-│   │   ├── app.ts
-│   │   └── index.ts
-│   ├── .env.example
-│   ├── package.json
-│   └── tsconfig.json
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── app/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   └── lib/
-│   ├── package.json
-│   └── tsconfig.json
-├── TODAY_COMMANDS_2026-04-03.txt
-├── TODAY_REVISION_2026-04-03.txt
-└── README.md
+backend/src/
+├── ai/
+│   ├── coach.ts
+│   ├── intentClassifier.ts
+│   ├── memoryExtractor.ts
+│   ├── openaiClient.ts
+│   ├── planner.ts
+│   ├── promptTemplates.ts
+│   └── types.ts
+├── config/
+├── controllers/
+├── jobs/
+├── middleware/
+├── providers/
+├── routes/
+├── services/
+├── utils/
+├── app.ts
+├── index.ts
+└── runtime.ts
 ```
 
-## Core Features
+## Data Model
 
-### Authentication
-
-- register with name, email, and password
-- login with email and password
-- JWT-based backend auth
-- hashed passwords using bcrypt
-- protected frontend routes
-- guest-only route redirection for login and register
-
-### Dashboard
-
-- total tasks
-- completed tasks
-- notes count
-- goals count
-- recent tasks
-- recent notes
-- recent goals
-
-### Tasks
-
-- create task
-- list tasks
-- edit task
-- delete task
-- mark task completed or open
-- optimistic UI updates
-
-### Notes
-
-- create note
-- list notes
-- edit note
-- delete note
-- optimistic UI updates
-
-### Goals
-
-- create goal
-- list goals
-- edit goal
-- delete goal
-- mark goal completed or active
-- optimistic UI updates
-
-## Current Frontend Experience
-
-The frontend is no longer a placeholder.
-
-It now includes:
-
-- premium sticky navbar
-- desktop and mobile navigation
-- active nav states
-- signed-in user shell
-- reusable page headers and cards
-- loading states
-- empty states
-- inline success and error banners
-- confirmation before delete
-- responsive layout for desktop and mobile
-
-## Backend API Routes
-
-Base URL:
-
-```text
-http://localhost:3001/api
-```
-
-### Health
-
-- `GET /health`
-
-### Auth
-
-- `POST /auth/register`
-- `POST /auth/login`
-- `GET /auth/me`
-
-### Tasks
-
-- `POST /tasks`
-- `GET /tasks`
-- `GET /tasks/:id`
-- `PUT /tasks/:id`
-- `DELETE /tasks/:id`
-
-### Notes
-
-- `POST /notes`
-- `GET /notes`
-- `GET /notes/:id`
-- `PUT /notes/:id`
-- `DELETE /notes/:id`
-
-### Goals
-
-- `POST /goals`
-- `GET /goals`
-- `GET /goals/:id`
-- `PUT /goals/:id`
-- `DELETE /goals/:id`
-
-## Database Schema
-
-The database currently has four models:
+Main Prisma models:
 
 - `User`
-- `Task`
-- `Note`
 - `Goal`
+- `Task`
+- `Memory`
+- `Message`
+- `DailyPlan`
+- `DailyReview`
+- `Reminder`
 
-Relationships:
+Important enums:
 
-- one user has many tasks
-- one user has many notes
-- one user has many goals
-- deleting a user cascades to the related records
+- `IntentType`
+- `TaskStatus`
+- `GoalPriority`
+- `GoalStatus`
+- `MemoryCategory`
+- `ReminderType`
+- `ReminderRecurrence`
+- `ReminderStatus`
 
-Main fields:
+## Routes
 
-- `User`: `id`, `name`, `email`, `password`
-- `Task`: `title`, `description`, `completed`
-- `Note`: `title`, `content`
-- `Goal`: `title`, `description`, `completed`
+Primary routes:
 
-## Local Development Setup
+- `GET /health`
+- `POST /webhook/telegram`
+- `POST /webhook/whatsapp`
 
-## 1. Prerequisites
+Dev routes:
 
-Install these first:
+- `GET /debug/users`
+- `POST /debug/message`
 
-- Node.js
-- npm
-- PostgreSQL
-- Git
+The same routes are also mounted under `/api/*` for compatibility.
 
-Recommended checks:
+## Environment Variables
 
-```bash
-node -v
-npm -v
-psql --version
-git --version
-```
+Backend env file: [backend/.env.example](/home/abhishek/ai-life-os/backend/.env.example)
 
-## 2. Clone or Open the Project
+Required:
+
+- `PORT`
+- `DATABASE_URL`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `TELEGRAM_BOT_TOKEN`
+- `APP_BASE_URL`
+- `NODE_ENV`
+
+Optional but useful:
+
+- `TELEGRAM_WEBHOOK_SECRET`
+- `TELEGRAM_TRANSPORT`
+- `DEFAULT_TIMEZONE`
+- `SCHEDULER_INTERVAL_MS`
+
+Notes:
+
+- Use `TELEGRAM_TRANSPORT=webhook` when the backend has a public URL.
+- Use `TELEGRAM_TRANSPORT=polling` for local development without a public webhook.
+- `APP_BASE_URL` is used to register the Telegram webhook automatically in webhook mode.
+
+## Local Setup
+
+1. Install dependencies.
 
 ```bash
 cd /home/abhishek/ai-life-os
-```
-
-## 3. Backend Setup
-
-Move into backend:
-
-```bash
-cd /home/abhishek/ai-life-os/backend
-```
-
-Install packages:
-
-```bash
+npm install
+cd backend
 npm install
 ```
 
-Create env file:
+2. Configure env.
 
 ```bash
+cd /home/abhishek/ai-life-os/backend
 cp .env.example .env
 ```
 
-Example backend env:
-
-```env
-# Server
-PORT=3001
-NODE_ENV=development
-FRONTEND_URL=http://localhost:3000
-
-# Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ai_life_os?schema=public"
-
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-JWT_EXPIRES_IN=7d
-```
-
-If your PostgreSQL password contains special characters like `@`, URL-encode them in `DATABASE_URL`.
-
-Example:
-
-```env
-DATABASE_URL="postgresql://postgres:yourpassword%40123@localhost:5432/ai_life_os?schema=public"
-```
-
-Generate Prisma client:
+3. Generate Prisma client and apply migrations.
 
 ```bash
+cd /home/abhishek/ai-life-os/backend
 npm run db:generate
+npm run db:migrate
 ```
 
-Run migration:
+4. Start the backend.
 
 ```bash
-npx prisma migrate dev --name init
+cd /home/abhishek/ai-life-os
+npm run dev:copilot
 ```
 
-Start backend:
+5. Configure Telegram.
+
+Webhook mode:
+
+- set `APP_BASE_URL` to your public backend URL
+- set `TELEGRAM_TRANSPORT=webhook`
+- start the server
+- the backend will attempt to register `POST /webhook/telegram`
+
+Polling mode:
+
+- set `TELEGRAM_TRANSPORT=polling`
+- start the server
+- no public webhook is required
+
+## PostgreSQL and Docker
+
+Backend Docker file: [backend/Dockerfile](/home/abhishek/ai-life-os/backend/Dockerfile)
+
+Compose file: [docker-compose.yml](/home/abhishek/ai-life-os/docker-compose.yml)
+
+Start backend + Postgres:
 
 ```bash
-npm run dev
+cd /home/abhishek/ai-life-os
+docker compose up --build
 ```
 
-Expected backend URL:
+## Debugging Without Telegram
 
-```text
-http://localhost:3001
-```
-
-## 4. Frontend Setup
-
-Move into frontend:
+You can simulate a Telegram message locally:
 
 ```bash
-cd /home/abhishek/ai-life-os/frontend
+curl -X POST http://localhost:3001/debug/message \
+  -H "Content-Type: application/json" \
+  -d '{
+    "telegramId": "123456",
+    "name": "Abhishek",
+    "timezone": "Asia/Kolkata",
+    "text": "Plan my day, I have 4 focused hours and want to make progress on AI backend engineering."
+  }'
 ```
 
-Install packages:
+Examples:
+
+- Save goal:
 
 ```bash
-npm install
+curl -X POST http://localhost:3001/debug/message \
+  -H "Content-Type: application/json" \
+  -d '{"telegramId":"123456","name":"Abhishek","text":"My goal is to become a top AI backend engineer."}'
 ```
 
-Start frontend:
+- Add task:
 
 ```bash
-npm run dev
+curl -X POST http://localhost:3001/debug/message \
+  -H "Content-Type: application/json" \
+  -d '{"telegramId":"123456","name":"Abhishek","text":"Task: finish the reminder service by tomorrow 6pm."}'
 ```
 
-Expected frontend URL:
+- Save memory:
 
-```text
-http://localhost:3000
+```bash
+curl -X POST http://localhost:3001/debug/message \
+  -H "Content-Type: application/json" \
+  -d '{"telegramId":"123456","name":"Abhishek","text":"Remember that my best deep work time is 6am to 9am."}'
 ```
 
-## 5. Run Full App
+- Daily review:
 
-Terminal 1:
+```bash
+curl -X POST http://localhost:3001/debug/message \
+  -H "Content-Type: application/json" \
+  -d '{"telegramId":"123456","name":"Abhishek","text":"Review: completed API refactor, partial test coverage, skipped workout."}'
+```
+
+## Build Verification
+
+Verified in this workspace:
 
 ```bash
 cd /home/abhishek/ai-life-os/backend
-npm run dev
-```
-
-Terminal 2:
-
-```bash
-cd /home/abhishek/ai-life-os/frontend
-npm run dev
-```
-
-## Production Build Check
-
-Frontend:
-
-```bash
-cd /home/abhishek/ai-life-os/frontend
+npx prisma generate
 npm run build
 ```
 
-Backend:
+## Current Product Behavior
 
-```bash
-cd /home/abhishek/ai-life-os/backend
-npm run build
-```
+The assistant is tuned to be:
 
-## Useful Test Commands
+- structured
+- concise
+- practical
+- personalized
 
-### Health Check
+It avoids generic motivational responses and focuses on actions, progress, blockers, and next steps.
 
-```bash
-curl http://localhost:3001/api/health
-```
+## Easiest Next Upgrades
 
-Expected:
+- Real WhatsApp provider implementation behind the existing provider interface
+- Admin routes or dashboard endpoints for plans, tasks, reminders, and memory
+- Better natural-language scheduling and timezone handling
+- Embeddings or memory ranking for richer retrieval
+- Rate limiting, request logging, and tests
+- Deployment to Railway, Render, Fly.io, or a container platform
 
-```json
-{"success":true,"message":"AI Life OS API is healthy"}
-```
+## Important Note
 
-### Register
-
-```bash
-curl -X POST http://localhost:3001/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Abhishek","email":"abhigautam954820@gmail.com","password":"secret123"}'
-```
-
-### Login
-
-```bash
-curl -X POST http://localhost:3001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"abhigautam954820@gmail.com","password":"secret123"}'
-```
-
-### Generate Token Into Shell Variable
-
-```bash
-TOKEN=$(curl -s -X POST http://localhost:3001/api/auth/login -H "Content-Type: application/json" -d '{"email":"abhigautam954820@gmail.com","password":"secret123"}' | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8')).data.token")
-```
-
-### Get Current User
-
-```bash
-curl http://localhost:3001/api/auth/me \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### Create Task
-
-```bash
-curl -s -X POST http://localhost:3001/api/tasks \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"title":"First task","description":"Finish MVP","completed":false}'
-```
-
-### Create Note
-
-```bash
-curl -s -X POST http://localhost:3001/api/notes \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"title":"First note","content":"This is my first note."}'
-```
-
-### Create Goal
-
-```bash
-curl -s -X POST http://localhost:3001/api/goals \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"title":"Launch AI Life OS MVP","description":"Ship Phase 1 cleanly","completed":false}'
-```
-
-## Frontend Routes
-
-### Public / Shared
-
-- `/`
-
-### Guest Only
-
-- `/login`
-- `/register`
-
-### Protected
-
-- `/dashboard`
-- `/tasks`
-- `/notes`
-- `/goals`
-
-## Frontend Architecture Notes
-
-Important areas in the frontend:
-
-- `src/app/`
-  App Router pages
-- `src/components/`
-  reusable UI building blocks
-- `src/hooks/use-auth-session.ts`
-  client-side auth session access
-- `src/lib/auth.ts`
-  token and user session helpers
-- `src/lib/api.ts`
-  API request helper
-- `src/lib/navigation.ts`
-  nav items and route visibility rules
-- `src/lib/types.ts`
-  shared frontend types
-
-## UX Improvements Already Implemented
-
-- route-level auth behavior in shared shell
-- mobile navigation menu
-- optimistic CRUD flows
-- rollback on API failure
-- feedback banners for success and error states
-- delete confirmation
-- loading skeletons for CRUD lists
-- structured dashboard summary cards
-
-## Known Issues / Cleanup Opportunities
-
-These are not blockers, but they are good next improvements:
-
-- add a backend dashboard summary endpoint to reduce multiple frontend requests
-- replace inline banners with a toast system if desired
-- remove the Next.js workspace-root warning related to multiple lockfiles
-- add automated tests for backend routes and frontend auth/session flow
-- deploy frontend and backend to a production environment
-
-## Roadmap After Phase 1
-
-Planned direction after the MVP foundation:
-
-- AI-powered productivity workflows
-- AI-assisted goal and task planning
-- AI note summarization
-- better analytics or productivity insights
-
-These are intentionally out of scope for the current Phase 1 MVP.
-
-## Troubleshooting
-
-### Backend does not start
-
-Check:
-
-- PostgreSQL is running
-- `.env` exists in `backend`
-- `DATABASE_URL` is correct
-
-Try:
-
-```bash
-cd /home/abhishek/ai-life-os/backend
-npm install
-npm run db:generate
-npm run dev
-```
-
-### Prisma authentication error
-
-This usually means the PostgreSQL username or password is wrong in `DATABASE_URL`.
-
-### Frontend cannot reach backend
-
-Check that backend is running on:
-
-```text
-http://localhost:3001
-```
-
-### Redirect issues on protected pages
-
-The frontend shell checks session state from `localStorage`. Make sure login completed successfully and the token exists.
-
-### Build verification
-
-Frontend:
-
-```bash
-cd /home/abhishek/ai-life-os/frontend
-npm run build
-```
-
-Backend:
-
-```bash
-cd /home/abhishek/ai-life-os/backend
-npm run build
-```
-
-## Revision Files Added During Development
-
-For quick revision, this repo also contains:
-
-- `TODAY_REVISION_2026-04-03.txt`
-- `TODAY_COMMANDS_2026-04-03.txt`
-
-## Summary
-
-AI Life OS currently has a strong Phase 1 base:
-
-- working authentication
-- working CRUD for tasks, notes, and goals
-- responsive frontend
-- polished SaaS-style UI
-- protected routes
-- optimistic user interactions
-
-The product is now in a good state for final cleanup, deployment preparation, and the next layer of AI features later.
+The frontend directory already had separate in-progress edits in this repository. This Telegram-first MVP work was kept isolated to the backend, schema, docs, and backend runtime setup.

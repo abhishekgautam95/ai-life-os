@@ -14,45 +14,207 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  tasks     Task[]
-  notes     Note[]
-  goals     Goal[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String           @id @default(uuid())
+  telegramId  String?          @unique
+  whatsappId  String?          @unique
+  channel     MessagingChannel @default(TELEGRAM)
+  name        String
+  timezone    String           @default("UTC")
+  goals       Goal[]
+  tasks       Task[]
+  memories    Memory[]
+  messages    Message[]
+  dailyPlans  DailyPlan[]
+  reviews     DailyReview[]
+  reminders   Reminder[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([telegramId])
 }
 
 model Task {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
+  userId      String
+  goalId      String?
   title       String
   description String?
-  completed   Boolean  @default(false)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+  dueAt       DateTime?
+  status      TaskStatus @default(PENDING)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal        Goal?      @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-model Note {
-  id        String   @id @default(uuid())
-  title     String
-  content   String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@index([userId, status])
+  @@index([goalId])
 }
 
 model Goal {
-  id          String   @id @default(uuid())
+  id          String       @id @default(uuid())
+  userId      String
   title       String
   description String?
-  completed   Boolean  @default(false)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  priority    GoalPriority @default(MEDIUM)
+  status      GoalStatus   @default(ACTIVE)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId, status])
+}
+
+model Memory {
+  id         String         @id @default(uuid())
+  userId     String
+  category   MemoryCategory
+  content    String
+  importance Int            @default(50)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+
+  @@index([userId, category, importance])
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  userId    String
+  role      MessageRole
+  rawText   String
+  intent    IntentType?
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model DailyPlan {
+  id        String   @id @default(uuid())
+  userId    String
+  dayKey    String
+  date      DateTime
+  content   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, dayKey])
+  @@index([userId, date])
+}
+
+model DailyReview {
+  id         String       @id @default(uuid())
+  userId     String
+  dayKey     String
+  date       DateTime
+  status     ReviewStatus
+  completed  Json?
+  partial    Json?
+  skipped    Json?
+  summary    String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([userId, dayKey])
+  @@index([userId, date])
+}
+
+model Reminder {
+  id         String         @id @default(uuid())
+  userId     String
+  type       ReminderType
+  payload    Json
+  sendAt     DateTime?
+  recurrence ReminderRecurrence @default(ONCE)
+  status     ReminderStatus @default(PENDING)
+  lastSentAt DateTime?
+  lastError  String?
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([userId, type, status])
+  @@index([sendAt, status])
+}
+
+enum MessagingChannel {
+  TELEGRAM
+  WHATSAPP
+}
+
+enum GoalPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum GoalStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum MemoryCategory {
+  GOAL
+  PREFERENCE
+  CONSTRAINT
+  ROUTINE
+  STRUGGLE
+  PRIORITY
+  CONTEXT
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum IntentType {
+  SAVE_GOAL
+  ADD_TASK
+  PLAN_DAY
+  REVIEW_DAY
+  ASK_ADVICE
+  SAVE_MEMORY
+  WEEKLY_SUMMARY
+  UNKNOWN
+}
+
+enum ReviewStatus {
+  COMPLETED
+  PARTIAL
+  SKIPPED
+  MIXED
+}
+
+enum ReminderType {
+  MORNING_PLAN
+  EVENING_REVIEW
+  CUSTOM
+  WEEKLY_SUMMARY
+}
+
+enum ReminderRecurrence {
+  ONCE
+  DAILY
+  WEEKLY
+}
+
+enum ReminderStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
 }

@@ -1,9 +1,24 @@
 import { Request, Response } from "express";
 
-const getHealth = (_req: Request, res: Response) => {
+import { prisma } from "../config/prisma";
+import { env } from "../config/env";
+
+const getHealth = async (_req: Request, res: Response) => {
+  let database = "down";
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    database = "up";
+  } catch {
+    database = "down";
+  }
+
   res.status(200).json({
     success: true,
-    message: "AI Life OS API is healthy",
+    service: "ai-life-copilot",
+    environment: env.NODE_ENV,
+    transport: env.TELEGRAM_TRANSPORT,
+    database,
   });
 };
 
